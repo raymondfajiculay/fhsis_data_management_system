@@ -11,11 +11,10 @@ class DashboardController extends Controller
         if (Auth::check()) {
             return redirect()->route('dashboard');
         }
-        return view('home');
+        return redirect()->route('login');
    }
 
    public function show() {
-        // dd(request()->all());
         $months = [
             'January', 'February', 'March', 'April',
             'May', 'June', 'July', 'August',
@@ -45,8 +44,8 @@ class DashboardController extends Controller
         ];
         
         $currentYear = date("Y");
-        $startYear = $currentYear - 10;
-        $endYear = $currentYear + 10;
+        $startYear = $currentYear - 20;
+        $endYear = $currentYear;
         $years = range($startYear, $endYear);
 
         $query = FileUpload::query();
@@ -55,62 +54,27 @@ class DashboardController extends Controller
         if (Auth::check()) {
             $user = Auth::user();
 
+            // Filter depending on user
             if ($user->role === 'user') {
                 $query->where('user_id', $user->id);
             } elseif ($user->role === 'admin') {
                 $query->where('municipality', $user->municipality);
             }
 
-            // Apply month filter if provided
-            if (request()->has('month') && !empty(request()->month)) {
-                $query->whereJsonContains('selected_months', request()->month);
-            }
+           // Apply year filter if provided; else use the current year
+            $year = request()->has('year') && !empty(request()->year) ? request()->year : date('Y');
+            $query->where('report_year', $year);
 
-            // Apply year filter if provided
-            if (request()->has('year') && !empty(request()->year)) {
-                $query->where('report_year', request()->year);
-            }
+            // Set selectedYear to the requested year or the current year
+            $selectedYear = old('year', request()->input('year', date('Y')));
+
 
             // Execute the query with sorting
             $files = $query->orderBy('date_submitted', 'desc')->get();
 
-            return view('dashboard', compact('files', 'months', 'years', 'municipalities'));
+            return view('dashboard', compact('files', 'months', 'years', 'municipalities', 'selectedYear'));
         } else {
             return redirect()->route('home');
         }
     }
-    public function showadmin() {
-        $months = [
-            'January', 'February', 'March', 'April',
-            'May', 'June', 'July', 'August',
-            'September', 'October', 'November', 'December'
-        ];
-
-        $municipalities = [
-            'Aborlan',
-            'Agutaya',
-            'Araceli',
-            'Bataraza',
-            'Brooke’s Point',
-            'Busuanga',
-            'Cagayancillo',
-            'Coron',
-            'Dumaran',
-            'El Nido',
-            'Essig',
-            'Kalayaan',
-            'Narra',
-            'Puerto Princesa',
-            'Quezon',
-            'Rizal',
-            'San Vicente',
-            'Sofronio Española',
-            'Taytay'
-        ];
-
-        $files = FileUpload::all();
-    
-        return view('dashboard_admin', compact('files','months', 'municipalities'));
-    }
-
 }

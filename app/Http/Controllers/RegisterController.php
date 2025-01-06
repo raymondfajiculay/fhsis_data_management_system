@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Gate;
 class RegisterController extends Controller
 {
     public function index() {
+        dd("test");
         if (Gate::allows('create-user')) {
             $municipalities = [
                 'Aborlan',
@@ -62,7 +63,7 @@ class RegisterController extends Controller
     }
     public function generatePassword()
     {
-        $password = substr(bin2hex(random_bytes(4)), 0, 8); // 4 bytes give us 8 hex characters
+        $password = substr(bin2hex(random_bytes(4)), 0, 8); 
         return response()->json(['password' => $password]);
     }
     

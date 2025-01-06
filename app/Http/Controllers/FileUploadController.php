@@ -55,6 +55,79 @@ class FileUploadController extends Controller
     
         return back()->withErrors('File upload failed.');
     }
+    public function show() {
+        $months = [
+            'January', 'February', 'March', 'April',
+            'May', 'June', 'July', 'August',
+            'September', 'October', 'November', 'December'
+        ];
+
+        $municipalities = [
+            'Aborlan',
+            'Agutaya',
+            'Araceli',
+            'Bataraza',
+            'Brooke’s Point',
+            'Busuanga',
+            'Cagayancillo',
+            'Coron',
+            'Dumaran',
+            'El Nido',
+            'Essig',
+            'Kalayaan',
+            'Narra',
+            'Puerto Princesa',
+            'Quezon',
+            'Rizal',
+            'San Vicente',
+            'Sofronio Española',
+            'Taytay'
+        ];
+        
+        $currentYear = date("Y");
+        $startYear = $currentYear - 20;
+        $endYear = $currentYear;
+        $years = range($startYear, $endYear);
+
+        $query = FileUpload::query();
+
+        // Role-based filtering
+        if (Auth::check()) {
+            $user = Auth::user();
+
+            if ($user->role === 'user') {
+                $query->where('user_id', $user->id);
+            } elseif ($user->role === 'admin') {
+                $query->where('municipality', $user->municipality);
+            }
+
+           // Apply municipality filter if provided
+            if (request()->has('municipality') && !empty(request()->municipality)) {
+                $query->where('municipality', request()->municipality);
+            }
+
+            // Apply month filter if provided
+            if (request()->has('month') && !empty(request()->month)) {
+                $query->whereJsonContains('selected_months', request()->month);
+            }
+
+            // Apply year filter if provided
+            if (request()->has('year') && !empty(request()->year)) {
+                // dd("year");
+                $query->where('report_year', request()->year);
+            }
+
+            // Execute the query with sorting
+            $files = $query->orderBy('date_submitted', 'desc')->get();
+
+            $selectedYear = old('year', request()->input('year', date('Y')));
+
+            return view('FileUpload.show', compact('files', 'months', 'years', 'municipalities', 'selectedYear'));
+        } else {
+            return redirect()->route('home');
+        }
+    }
+
     public function download($id)
     {
         // Find the file upload by ID
@@ -70,6 +143,7 @@ class FileUploadController extends Controller
 
         return redirect()->back()->withErrors('File not found.');
     }
+
     public function destroy($id)
     {
         // Find the file upload by ID
